@@ -113,12 +113,16 @@ def main():
 
     df_input = pd.DataFrame([input_dict])
 
+    # ================================
     # One-hot encoding & align columns with training data
+    # ================================
     df_input = pd.get_dummies(df_input)
-    expected_cols = model.feature_names_in_
-    df_input = df_input.reindex(columns=expected_cols, fill_value=0)
+    training_cols = X.columns  # استخدام أعمدة التدريب
+    df_input = df_input.reindex(columns=training_cols, fill_value=0)
 
+    # ================================
     # Predict
+    # ================================
     if st.button("Predict Churn"):
         prediction = model.predict(df_input)[0]
         if prediction == 1:
@@ -126,8 +130,8 @@ def main():
         else:
             st.success("✅ The customer is NOT likely to churn.")
 
+# ================================
 # Run the app
+# ================================
 if __name__ == "__main__":
     main()
-
-
