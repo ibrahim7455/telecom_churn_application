@@ -17,7 +17,14 @@ st.set_page_config(
 # تحميل البيانات والموديل
 @st.cache_data
 def load_data():
-    df = pd.read_csv('https://github.com/YBIFoundation/Dataset/raw/main/TelecomCustomerChurn.csv')
+    dataset_path = Path("cleaned_dataset.csv")
+    
+    if not dataset_path.exists():
+        st.error(f"Dataset file not found at {dataset_path}. Upload it to the workspace folder.")
+        st.stop()
+
+    df = pd.read_csv(dataset_path)
+
     return df
 
 @st.cache_resource
@@ -500,3 +507,4 @@ st.markdown("""
         <p>📱 Telecom Customer Churn Prediction System | Built with Streamlit & Machine Learning</p>
     </div>
 """, unsafe_allow_html=True)
+
