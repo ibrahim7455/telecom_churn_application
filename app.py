@@ -1,11 +1,12 @@
+from pathlib import Path
 import streamlit as st
 import pandas as pd
-import pickle
+import joblib
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
-st.set_page_config(page_title="Telecom Churn Prediction", layout="wide")
-
-# ==================== تحميل البيانات والموديل ====================
-@st.cache_data
+# ================================
+# Load dataset and preprocess
+# ================================
 def load_data():
     dataset_path = Path("cleaned_dataset.csv")
 
@@ -14,80 +15,117 @@ def load_data():
         st.stop()
 
     df = pd.read_csv(dataset_path)
-    return df
 
-@st.cache_resource
+    # Drop unnecessary columns
+    if 'customerid' in df.columns:
+        df.drop(columns=['customerid'], inplace=True)  
+
+    # Encode categorical features
+    le = LabelEncoder()
+    categorical_cols = [
+        'gender', 'partner', 'dependents', 'phoneservice', 'multiplelines',
+        'onlinesecurity', 'onlinebackup', 'deviceprotection', 'techsupport',
+        'streamingtv', 'streamingmovies', 'paperlessbilling'
+    ]
+    for col in categorical_cols:
+        if col in df.columns:
+            df[col] = le.fit_transform(df[col])
+
+    # Scale numerical features
+    numeric_cols = ["tenure", "monthlycharges", "totalcharges"]
+    scaler = StandardScaler()
+    df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
+
+    X = df.drop('churn', axis=1)
+    y = df['churn']
+
+    return df, X, y, scaler
+
+# ================================
+# Load model
+# ================================
 def load_model():
-    try:
-        with open('random_forest_model.pkl', 'rb') as f:
-            model = pickle.load(f)
-        with open('ordinal_encoder.pkl', 'rb') as f:
-            encoder = pickle.load(f)
-        return model, encoder
-    except:
-        return None, None
+    model_path = Path("logistic_regression_model.pkl")
+    if not model_path.exists():
+        st.error(f"Model file not found at {model_path}. Upload it to the workspace folder.")
+        st.stop()
+    model = joblib.load(model_path)
+    return model
 
-df = load_data()
-model, encoder = load_model()
+# ================================
+# Main Streamlit App
+# ================================
+def main():
+    st.title("Telecom Customer Churn Prediction")
 
-# ==================== Sidebar ====================
-page = st.sidebar.radio("Navigate", ["Dashboard", "Prediction", "Insights"])
+    df, X, y, scaler = load_data()
+    model = load_model()
 
-# ==================== Dashboard ====================
-if page == "Dashboard":
-    st.title("Customer Churn Dashboard")
-    
-    st.write("Total Customers:", len(df))
-    st.write("Churned Customers:", len(df[df['Churn']=='Yes']))
-    st.write("Churn Rate:", f"{(len(df[df['Churn']=='Yes'])/len(df)*100):.1f}%")
-    st.write("Avg Monthly Charges:", f"${df['MonthlyCharges'].mean():.2f}")
-    
-    st.subheader("Churn Distribution")
-    st.bar_chart(df['Churn'].value_counts())
+    # ================================
+    # User Inputs
+    # ================================
+    gender = st.selectbox("Gender", ["Male", "Female"])
+    seniorcitizen = st.selectbox("Senior Citizen", ["Yes", "No"])
+    partner = st.selectbox("Partner", ["Yes", "No"])
+    dependents = st.selectbox("Dependents", ["Yes", "No"])
+    tenure = st.number_input("Tenure (Months)", 0, 100, 10)
+    phoneservice = st.selectbox("Phone Service", ["Yes", "No"])
+    multiplelines = st.selectbox("Multiple Lines", ["Yes", "No"])
+    onlinesecurity = st.selectbox("Online Security", ["Yes", "No"])
+    onlinebackup = st.selectbox("Online Backup", ["Yes", "No"])
+    deviceprotection = st.selectbox("Device Protection", ["Yes", "No"])
+    techsupport = st.selectbox("Tech Support", ["Yes", "No"])
+    streamingtv = st.selectbox("Streaming TV", ["Yes", "No"])
+    streamingmovies = st.selectbox("Streaming Movies", ["Yes", "No"])
+    paperlessbilling = st.selectbox("Paperless Billing", ["Yes", "No"])
+    monthlycharges = st.number_input("Monthly Charges", 0.0, 200.0, 70.0)
+    totalcharges = st.number_input("Total Charges", 0.0, 10000.0, 500.0)
+    internetservice = st.selectbox("Internet Service", ["DSL", "Fiber optic", "No"])
+    contract = st.selectbox("Contract", ["Month-to-month", "One year", "Two year"])
+    paymentmethod = st.selectbox("Payment Method", [
+        "Electronic check",
+        "Credit card (automatic)",
+        "Bank transfer (automatic)",
+        "Manual"
+    ])
 
-# ==================== Prediction ====================
-elif page == "Prediction":
-    st.title("Predict Customer Churn")
-    
-    gender = st.selectbox("Gender", ["Female", "Male"])
-    senior_citizen = st.selectbox("Senior Citizen", ["No", "Yes"])
-    tenure = st.slider("Tenure (months)", 0, 72, 12)
-    monthly_charges = st.number_input("Monthly Charges ($)", value=50.0)
-    contract = st.selectbox("Contract", ["Monthly", "One year", "Two year"])
-    
-    if st.button("Predict"):
-        input_data = pd.DataFrame({
-            'Gender':[gender],
-            'SeniorCitizen':[1 if senior_citizen=="Yes" else 0],
-            'Tenure':[tenure],
-            'Contract':[contract],
-            'MonthlyCharges':[monthly_charges]
-        })
-        
-        if model and encoder:
-            try:
-                input_encoded = encoder.transform(input_data)
-                pred = model.predict(input_encoded)[0]
-                prob = model.predict_proba(input_encoded)[0][1]*100
-                st.write("Prediction:", "Churn" if pred=="Yes" else "No Churn")
-                st.write(f"Churn Probability: {prob:.1f}%")
-            except:
-                st.write("Error in prediction.")
+    input_dict = {
+        "gender": gender,
+        "seniorcitizen": 1 if seniorcitizen == "Yes" else 0,
+        "partner": 1 if partner == "Yes" else 0,
+        "dependents": 1 if dependents == "Yes" else 0,
+        "tenure": tenure,
+        "phoneservice": 1 if phoneservice == "Yes" else 0,
+        "multiplelines": 1 if multiplelines == "Yes" else 0,
+        "onlinesecurity": 1 if onlinesecurity == "Yes" else 0,
+        "onlinebackup": 1 if onlinebackup == "Yes" else 0,
+        "deviceprotection": 1 if deviceprotection == "Yes" else 0,
+        "techsupport": 1 if techsupport == "Yes" else 0,
+        "streamingtv": 1 if streamingtv == "Yes" else 0,
+        "streamingmovies": 1 if streamingmovies == "Yes" else 0,
+        "paperlessbilling": 1 if paperlessbilling == "Yes" else 0,
+        "monthlycharges": monthlycharges,
+        "totalcharges": totalcharges,
+        "internetservice": internetservice,
+        "contract": contract,
+        "paymentmethod": paymentmethod,
+    }
+
+    df_input = pd.DataFrame([input_dict])
+
+    # One-hot encoding & align columns with training data
+    df_input = pd.get_dummies(df_input)
+    expected_cols = model.feature_names_in_
+    df_input = df_input.reindex(columns=expected_cols, fill_value=0)
+
+    # Predict
+    if st.button("Predict Churn"):
+        prediction = model.predict(df_input)[0]
+        if prediction == 1:
+            st.error("⚠ The customer is likely to CHURN!")
         else:
-            # Demo logic
-            risk = 0
-            if contract=="Monthly": risk+=30
-            if monthly_charges>70: risk+=20
-            if tenure<12: risk+=25
-            st.write("Risk Score:", f"{risk}%")
-            st.write("Prediction:", "Churn" if risk>50 else "No Churn")
+            st.success("✅ The customer is NOT likely to churn.")
 
-# ==================== Insights ====================
-elif page == "Insights":
-    st.title("Insights & Recommendations")
-    
-    st.write("Top Churn Drivers:")
-    st.write("- Month-to-Month contracts have higher churn")
-    st.write("- Tenure less than 12 months increases churn risk")
-    st.write("- Higher monthly charges correlate with higher churn")
-
+# Run the app
+if __name__ == "__main__":
+    main()
