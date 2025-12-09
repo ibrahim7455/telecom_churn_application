@@ -45,7 +45,7 @@ def load_data():
 # Load model
 # ================================
 def load_model():
-    model_path = Path("logistic_regression_model.pkl")
+    model_path = Path("random-forest_model.pkl")
     if not model_path.exists():
         st.error(f"Model file not found at {model_path}. Upload it to the workspace folder.")
         st.stop()
@@ -129,3 +129,4 @@ def main():
 # Run the app
 if __name__ == "__main__":
     main()
+
