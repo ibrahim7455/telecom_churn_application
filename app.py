@@ -7,7 +7,7 @@ st.set_page_config(page_title="Telecom Churn Prediction", layout="wide")
 # ==================== تحميل البيانات والموديل ====================
 @st.cache_data
 def load_data():
-    dataset_path = Path("workspace") / "cleaned_dataset.csv"
+    dataset_path = Path("cleaned_dataset.csv")
 
     if not dataset_path.exists():
         st.error(f"Dataset file not found at {dataset_path}. Upload it to the workspace folder.")
@@ -90,3 +90,4 @@ elif page == "Insights":
     st.write("- Month-to-Month contracts have higher churn")
     st.write("- Tenure less than 12 months increases churn risk")
     st.write("- Higher monthly charges correlate with higher churn")
+
