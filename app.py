@@ -107,10 +107,11 @@ def main():
     df_input = pd.DataFrame([input_dict])
 
     # ================================
-    # One-hot encoding & align columns with training data
+    # label encoding & align columns with training data
     # ================================
-    df_input = pd.get_dummies(df_input)
-    training_cols = X.columns  # استخدام أعمدة التدريب
+    le = LabelEncoder()
+    df_input = le.transform(df_input)
+    training_cols = X.columns  
     df_input = df_input.reindex(columns=training_cols, fill_value=0)
 
     # ================================
@@ -119,9 +120,9 @@ def main():
     if st.button("Predict Churn"):
         prediction = model.predict(df_input)[0]
         if prediction == 1:
-            st.error("⚠ The customer is likely to CHURN!")
+            st.error(" The customer is likely to churn !")
         else:
-            st.success("✅ The customer is NOT likely to churn.")
+            st.success(" The customer is not likely to churn.")
 
 # ================================
 # Run the app
