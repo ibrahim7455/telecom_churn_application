@@ -107,10 +107,9 @@ def main():
     df_input = pd.DataFrame([input_dict])
 
     # ================================
-    # label encoding & align columns with training data
+    # One-hot encoding & align columns with training data
     # ================================
-    le = LabelEncoder()
-    df_input = le.transform(df_input)
+    df_input = pd.get_dummies(df_input)
     training_cols = X.columns  
     df_input = df_input.reindex(columns=training_cols, fill_value=0)
 
