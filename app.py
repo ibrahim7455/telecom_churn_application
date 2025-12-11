@@ -10,10 +10,6 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 def load_data():
     dataset_path = Path("cleaned_dataset.csv")
 
-    if not dataset_path.exists():
-        st.error(f"Dataset file not found at {dataset_path}. Upload it to the workspace folder.")
-        st.stop()
-
     df = pd.read_csv(dataset_path)
 
     # Drop unnecessary columns
