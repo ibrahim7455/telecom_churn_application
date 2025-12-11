@@ -42,9 +42,6 @@ def load_data():
 # ================================
 def load_model():
     model_path = Path("random_forest_model.pkl")
-    if not model_path.exists():
-        st.error(f"Model file not found at {model_path}. Upload it to the workspace folder.")
-        st.stop()
     model = joblib.load(model_path)
     return model
 
